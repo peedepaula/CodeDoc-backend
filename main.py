@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-from controller import usuario_controller
+from controller import usuario_controller, documentacao_controller
 
 app = FastAPI()
 
@@ -18,6 +18,7 @@ app.add_middleware(
 )
 
 app.include_router(usuario_controller.router)
+app.include_router(documentacao_controller.router)
 
 @app.get("/")
 def main():
