@@ -14,7 +14,7 @@ def meu_perfil(usuario: Usuario = Depends(get_current_user)):
     return {
         "nome": usuario.nome_usuario,
         "cargo": usuario.cargo_usuario,
-        "email_usuario": usuario.nome_usuario
+        "email_usuario": usuario.email_usuario
     }
 
 @router.post("/entrar")
