@@ -4,7 +4,7 @@ from uuid import UUID
 
 SECRET_KEY = "SUA_CHAVE_SUPER_SECRETA"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+ACCESS_TOKEN_EXPIRE_DAYS = 30
 
 def criar_token(data: dict) -> str:
     to_encode = data.copy()
@@ -17,7 +17,7 @@ def criar_token(data: dict) -> str:
         elif isinstance(value, dict):
             to_encode[key] = criar_token(value)  # recursivo, se quiser ser paranoico
 
-    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(timezone.utc) + timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
 
     to_encode.update({
         "exp": expire,                # pode deixar datetime, jose aceita
