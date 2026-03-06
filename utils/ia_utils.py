@@ -3,56 +3,76 @@ import json
 
 client = OpenAI()
 
-
 def gerar_documentacao(codigo):
 
     prompt = f"""
-Analise este código e gere documentação completa.
+Analise o código fornecido e gere documentação técnica.
 
-Responda APENAS em JSON válido.
+Responda APENAS com JSON válido.
 
-Formato obrigatório:
+Estrutura obrigatória:
 
 {{
  "titulo": "titulo curto do projeto",
  "descricao": "explicação geral",
  "readme": "readme completo em markdown",
  "wiki": "explicação detalhada da arquitetura",
- "glossario": "lista de termos importantes",
- "diagrama": "código do diagrama em sintaxe MERMAID flowchart"
+ "glossario": [
+   {{
+     "termo": "nome do termo",
+     "definicao": "explicação"
+   }}
+ ],
+ "diagrama": "codigo_mermaid"
 }}
 
-REGRAS IMPORTANTES PARA O CAMPO "diagrama":
+REGRAS IMPORTANTES:
 
-- O diagrama DEVE usar sintaxe Mermaid.
-- Use o formato flowchart TD.
-- Use setas --> para conectar etapas.
-- Cada etapa deve estar dentro de colchetes [].
-- Use <br/> para quebrar linha dentro de caixas.
-- NÃO escreva texto fora do diagrama.
-- NÃO explique o diagrama.
-- NÃO escreva markdown.
-- Retorne apenas o código Mermaid.
+- O JSON deve ser válido.
+- Não coloque JSON dentro de strings.
+- glossario DEVE ser um ARRAY de objetos.
+- Cada objeto deve ter "termo" e "definicao".
 
-Exemplo de formato correto para o campo "diagrama":
+REGRAS PARA O CAMPO "diagrama":
+
+- Deve ser um diagrama Mermaid válido
+- Deve começar obrigatoriamente com: flowchart TD
+- Use setas --> para conectar etapas
+- Cada etapa deve estar dentro de colchetes []
+- Use <br/> para quebra de linha
+- Use no máximo 15 nós
+- NÃO use aspas dentro de []
+- NÃO escreva explicações
+- NÃO escreva markdown
+- NÃO use ```mermaid
+- NÃO use blocos de código
+
+EXEMPLO CORRETO:
 
 flowchart TD
-A[Inicio] --> B[Processar dados]
-B --> C{{Validação}}
-C -->|válido| D[Salvar no banco]
-C -->|inválido| E[Erro]
-D --> F[Fim]
+A[Inicio] --> B[Receber requisicao]
+B --> C{{Validacao}}
+C -->|valido| D[Processar dados]
+C -->|erro| E[Retornar erro]
+D --> F[Salvar no banco]
+F --> G[Fim]
 
 Código para análise:
+
 {codigo[:20000]}
 """
 
-    response = client.responses.create(
-        model="gpt-5-mini",
-        input=prompt,
-        max_output_tokens=10000
+    response = client.chat.completions.create(
+        model="gpt-4o",  # Nota: 'gpt-5-mini' não existe (ainda!)
+        messages=[
+            {"role": "system", "content": "Você é um assistente especializado em documentação técnica."},
+            {"role": "user", "content": prompt}
+        ],
+        response_format={"type": "json_object"},
+        max_tokens=4000 # 'max_output_tokens' é termo do Gemini; OpenAI usa 'max_tokens'
     )
 
-    texto = response.output_text
+    # Para acessar o texto na OpenAI:
+    texto = response.choices[0].message.content
 
     return json.loads(texto)

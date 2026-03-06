@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from model.usuario_model import Usuario
 from database import get_db
@@ -6,6 +6,12 @@ from schemas.usuario_schemas import usuarioCreate, UsuarioLogin, UsuarioUpdate
 from utils.seguranca import gerar_hash_senha, verificar_senha
 from utils.token import criar_token
 from utils.auth import get_current_user
+from model.reset_senha_model import ResetSenha
+from utils.email import enviar_email_reset
+from utils.token_urlsafe import gerar_token_reset
+from datetime import datetime, timedelta
+import shutil
+import os
 
 router = APIRouter(prefix="/usuario", tags=["Usuários"])
 
@@ -14,6 +20,7 @@ def meu_perfil(usuario: Usuario = Depends(get_current_user)):
     return {
         "nome": usuario.nome_usuario,
         "cargo": usuario.cargo_usuario,
+        "foto": usuario.foto_usuario,
         "email_usuario": usuario.email_usuario
     }
 
@@ -71,24 +78,84 @@ def registrar(dados: usuarioCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Erro ao tentar registrar: {e}")
 
 @router.post("/mandar-email-trocar-email")
-def mandar_email_trocar_email():
+def mandar_email_trocar_email(usuario: Usuario = Depends(get_current_user)):
     return
 
 @router.post("/mandar-email-trocar-senha")
-def mandar_email_trocar_senha():
-    return
+def mandar_email_trocar_senha(email: str, db: Session = Depends(get_db)):
+    usuario = db.query(Usuario).filter(
+        Usuario.email_usuario == email
+    ).first()
+
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+
+    token = gerar_token_reset()
+
+    reset = ResetSenha(
+        usuario_id=usuario.id,
+        token=token,
+        expira_em=datetime.utcnow() + timedelta(minutes=15)
+    )
+
+    db.add(reset)
+    db.commit()
+    link = f"http://localhost:5173/nova-senha?token={token}"
+    enviar_email_reset(usuario.email_usuario, link)
+
+    return {"mensagem": "Email enviado"}
 
 @router.patch("/trocar-email")
-def trocar_email():
+def trocar_email(usuario: Usuario = Depends(get_current_user)):
     return
 
 @router.patch("/trocar-senha")
-def trocar_senha():
-    return
+def trocar_senha(token: str, nova_senha: str, db: Session = Depends(get_db)):
+    reset = db.query(ResetSenha).filter(
+        ResetSenha.token == token
+    ).first()
+
+    if not reset:
+        raise HTTPException(status_code=400, detail="Token inválido")
+
+    if reset.expira_em < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Token expirado")
+
+    usuario = db.query(Usuario).filter(
+        Usuario.id == reset.usuario_id
+    ).first()
+
+    usuario.senha_usuario = gerar_hash_senha(nova_senha)
+    db.delete(reset)
+    db.commit()
+
+    return {"mensagem": "Senha alterada"}
 
 @router.patch("/trocar-foto")
-def trocar_foto():
-    return
+def trocar_foto(
+    foto: UploadFile = File(...), 
+    db: Session = Depends(get_db), 
+    usuario: Usuario = Depends(get_current_user)
+):
+    # 1. Definir o caminho onde a foto será salva
+    pasta_fotos = "static/fotos_perfil"
+    if not os.path.exists(pasta_fotos):
+        os.makedirs(pasta_fotos)
+
+    # 2. Gerar um nome único para o arquivo (evita sobrescrever fotos com mesmo nome)
+    extensao = foto.filename.split(".")[-1]
+    nome_arquivo = f"{usuario.id}.{extensao}"
+    caminho_final = os.path.join(pasta_fotos, nome_arquivo)
+
+    # 3. Salvar o arquivo no disco
+    with open(caminho_final, "wb") as buffer:
+        shutil.copyfileobj(foto.file, buffer)
+
+    # 4. Salvar o caminho/URL no banco de dados
+    usuario.foto_usuario = f"http://localhost:8000/{pasta_fotos}/{nome_arquivo}"
+    db.commit()
+
+    return {"mensagem": "Foto atualizada", "url": usuario.foto_usuario}
 
 @router.patch("/atualizar-nome-cargo")
 def atualizar_nome_cargo(dados: UsuarioUpdate, db: Session = Depends(get_db), usuario: Usuario = Depends(get_current_user)):

@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from controller import usuario_controller, documentacao_controller
+from fastapi.staticfiles import StaticFiles # Importe isso
 
 app = FastAPI()
 
@@ -19,6 +20,8 @@ app.add_middleware(
 
 app.include_router(usuario_controller.router)
 app.include_router(documentacao_controller.router)
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/")
 def main():
