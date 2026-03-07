@@ -1,8 +1,8 @@
 import smtplib
 from email.mime.text import MIMEText
 
-EMAIL = "codedoc@gmail.com"
-SENHA = "senha_app_gmail"
+EMAIL = "codedoc.suporte@gmail.com"
+SENHA = "yjauutrrnlovcxbq"
 
 def enviar_email_reset(destinatario, link):
 
@@ -15,7 +15,7 @@ def enviar_email_reset(destinatario, link):
     """
 
     msg = MIMEText(corpo)
-    msg["Subject"] = "Recuperação de senha"
+    msg["Subject"] = "Recuperação Senha | E-mail"
     msg["From"] = EMAIL
     msg["To"] = destinatario
 
