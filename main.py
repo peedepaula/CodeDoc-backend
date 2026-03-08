@@ -7,7 +7,8 @@ from fastapi.staticfiles import StaticFiles # Importe isso
 app = FastAPI()
 
 origins = [
-    'http://localhost:5173'
+    'http://localhost:5173',
+    'http://192.168.0.104:5173'
 ]
 
 app.add_middleware(
