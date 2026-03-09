@@ -1,8 +1,8 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 from database import get_db
-from model.usuario_model import Usuario
+from models.usuario_model import Usuario
 from utils.token import SECRET_KEY, ALGORITHM
 from fastapi.security import HTTPBearer
 from fastapi import Security

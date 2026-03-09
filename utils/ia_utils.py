@@ -59,20 +59,19 @@ F --> G[Fim]
 
 Código para análise:
 
-{codigo[:20000]}
+{codigo[:30000]}
 """
 
     response = client.chat.completions.create(
-        model="gpt-4o",  # Nota: 'gpt-5-mini' não existe (ainda!)
+        model="gpt-4o",
         messages=[
             {"role": "system", "content": "Você é um assistente especializado em documentação técnica."},
             {"role": "user", "content": prompt}
         ],
         response_format={"type": "json_object"},
-        max_tokens=4000 # 'max_output_tokens' é termo do Gemini; OpenAI usa 'max_tokens'
+        max_tokens=8000
     )
 
-    # Para acessar o texto na OpenAI:
     texto = response.choices[0].message.content
 
     return json.loads(texto)

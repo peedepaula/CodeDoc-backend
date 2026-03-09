@@ -1,14 +1,14 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-from controller import usuario_controller, documentacao_controller
-from fastapi.staticfiles import StaticFiles # Importe isso
+from routers import usuario_router, documentacao_router
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
 
 origins = [
     'http://localhost:5173',
-    'http://192.168.0.102:5173'
+    'http://192.168.0.105:5173'
 ]
 
 app.add_middleware(
@@ -19,8 +19,8 @@ app.add_middleware(
     allow_headers=['*'],
 )
 
-app.include_router(usuario_controller.router)
-app.include_router(documentacao_controller.router)
+app.include_router(usuario_router.router)
+app.include_router(documentacao_router.router)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 

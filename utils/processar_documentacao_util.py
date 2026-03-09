@@ -1,14 +1,13 @@
-from model.documentacao_model import Projeto
-from services.documentacao_service import gerar_documentacao_github
+from models.documentacao_model import Projeto
 from database import SessionLocal
 import json
 
 def processar_documentacao(projeto_id, github_url):
-
+    from services.documentacao_service import DocumentacaoService
     db = SessionLocal()
 
     try:
-        documentacao = gerar_documentacao_github(github_url)
+        documentacao = DocumentacaoService.gerar_documentacao_github_service(github_url)
 
         projeto = db.query(Projeto).filter(Projeto.id == projeto_id).first()
 
