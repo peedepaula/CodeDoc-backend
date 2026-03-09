@@ -12,6 +12,7 @@ from utils.email import enviar_email_reset
 from utils.token_urlsafe import gerar_token_reset
 from datetime import datetime, timedelta
 import shutil
+from fastapi import Request
 import os
 
 router = APIRouter(prefix="/usuario", tags=["Usuários"])
@@ -76,6 +77,7 @@ def registrar(dados: usuarioCreate, db: Session = Depends(get_db)):
             "id": novo_usuario.id
         }
     except Exception as e:
+        print(e)
         raise HTTPException(status_code=500, detail=f"Erro ao tentar registrar: {e}")
 
 @router.post("/mandar-email-trocar-email")
@@ -191,6 +193,7 @@ def trocar_senha_logado(
 
 @router.patch("/trocar-foto")
 def trocar_foto(
+    request: Request,
     foto: UploadFile = File(...), 
     db: Session = Depends(get_db), 
     usuario: Usuario = Depends(get_current_user)
@@ -210,7 +213,9 @@ def trocar_foto(
         shutil.copyfileobj(foto.file, buffer)
 
     # 4. Salvar o caminho/URL no banco de dados
-    usuario.foto_usuario = f"http://localhost:8000/{pasta_fotos}/{nome_arquivo}"
+    url_base = str(request.base_url)
+    usuario.foto_usuario = f"{url_base}static/fotos_perfil/{nome_arquivo}"
+
     db.commit()
 
     return {"mensagem": "Foto atualizada", "url": usuario.foto_usuario}
