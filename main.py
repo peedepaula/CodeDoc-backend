@@ -9,6 +9,7 @@ app = FastAPI()
 origins = [
     'http://localhost:5173',
     'http://192.168.0.103:5173'
+    'https://codedoc-d.pages.dev'
 ]
 
 app.add_middleware(
