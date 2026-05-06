@@ -25,9 +25,13 @@ def criar_documentacao(
 ):
     return DocumentacaoService.criar_documentacao_service(dados, background_tasks, usuario, db)
 
+@router.patch("/editar")
+def editar_documentacao(id_projeto: uuid.UUID, dados: ProjetoUpdate, db: Session = Depends(get_db), usuario: Usuario = Depends(get_current_user)):
+    return DocumentacaoService.editar_documentacao_service(id_projeto, dados, usuario, db)
+
 @router.patch("/atualizar")
-def atualizar_documentacao(id_projeto: uuid.UUID, dados: ProjetoUpdate, db: Session = Depends(get_db), usuario: Usuario = Depends(get_current_user)):
-    return DocumentacaoService.atualizar_documentacao_service(id_projeto, dados, usuario, db)
+def atualizar_documentacao(id_projeto: uuid.UUID, background_tasks: BackgroundTasks, db: Session = Depends(get_db), usuario: Usuario = Depends(get_current_user)):
+    return DocumentacaoService.atualizar_documentacao_service(background_tasks, id_projeto, usuario, db)
 
 @router.delete("/apagar")
 def apagar_documentacao(id_projeto: uuid.UUID, db: Session = Depends(get_db), usuario: Usuario = Depends(get_current_user)):

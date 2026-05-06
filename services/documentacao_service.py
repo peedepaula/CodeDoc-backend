@@ -72,7 +72,8 @@ class DocumentacaoService:
                 readme_projeto="",
                 wiki_projeto="",
                 diagramas_projeto="",
-                glossario_projeto=""
+                glossario_projeto="",
+                github_url=dados.github_url
             )
 
             db.add(projeto)
@@ -82,7 +83,8 @@ class DocumentacaoService:
             background_tasks.add_task(
                 processar_documentacao,
                 projeto.id,
-                dados.github_url
+                dados.github_url,
+                'geracao'
             )
 
             return projeto
@@ -94,7 +96,7 @@ class DocumentacaoService:
     
 
     @staticmethod
-    def atualizar_documentacao_service(id_projeto: str, dados: ProjetoUpdate, usuario: Usuario, db: Session):
+    def editar_documentacao_service(id_projeto: str, dados: ProjetoUpdate, usuario: Usuario, db: Session):
         try:
             projeto = (db.query(Projeto).filter(Projeto.id == id_projeto, Projeto.usuario_id == usuario.id).first())
             if not projeto:
@@ -111,8 +113,39 @@ class DocumentacaoService:
         except Exception:
             raise
         except Exception:
-            raise HTTPException(status_code=500, detail="Erro ao tentar atualizar a documentação.")
-    
+            raise HTTPException(status_code=500, detail="Erro ao tentar editar a documentação.")
+        
+
+    def atualizar_documentacao_service(background_tasks: BackgroundTasks, id_projeto: str, usuario: Usuario, db: Session):
+        try:
+            projeto = (db.query(Projeto).filter(Projeto.id == id_projeto, Projeto.usuario_id == usuario.id).first())
+            if not projeto:
+                raise HTTPException(status_code=404, detail="Projeto não encontrado")
+
+            projeto.usuario_id=usuario.id,
+            projeto.descricao_projeto="Atualizando...",
+            projeto.readme_projeto="Atualizando...",
+            projeto.wiki_projeto="Atualizando...",
+            projeto.diagramas_projeto="",
+            projeto.glossario_projeto="Atualizando...",
+
+            db.commit()
+            db.refresh(projeto)
+            
+            background_tasks.add_task(
+                processar_documentacao,
+                projeto.id,
+                projeto.github_url,
+                'atualizar'
+            )
+
+            return projeto
+
+        except Exception:
+            raise
+        except Exception:
+            raise HTTPException(status_code=500, detail="Erro ao tentar atualizar a documentação.") 
+
 
     @staticmethod
     def apagar_documentacao(id_projeto: str, usuario: Usuario, db: Session):

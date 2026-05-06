@@ -8,6 +8,7 @@ class ProjetoUpdate(BaseModel):
     wiki_projeto: str | None = None
     diagramas_projeto: str | None = None
     glossario_projeto: str | None = None
+    github_url: str
 
 class ProjetoCriar(BaseModel):
     github_url: Optional[str] = None

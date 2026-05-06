@@ -17,3 +17,4 @@ class Projeto(Base):
     usuario_id = Column(String(200), nullable=False)
     criado_em = Column(DateTime, default=datetime.utcnow)
     atualizado_em = Column(DateTime, default=datetime.utcnow)
+    github_url = Column(String(300), nullable=False)

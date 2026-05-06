@@ -2,7 +2,7 @@ from jose import JWTError, jwt
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
-SECRET_KEY = "SUA_CHAVE_SUPER_SECRETA"
+SECRET_KEY = "SI3jSUhhjsdauaj37ISJDKjhausd8a9JSKjdiad89adhaknrk3j928r9ioajfskadhfjesury48wjkajopai3urhjahfjdsyf74yfjahiaoiojkojkyfigknmgfu8wy3g3788ruweofjdghurughrgs7ut6esggsyfusih7ftwefgyusuifhs78e7fsfuisheufid7fyesR"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_DAYS = 30
 
