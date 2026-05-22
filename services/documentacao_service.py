@@ -13,7 +13,8 @@ from utils.processar_documentacao_util import processar_documentacao
 from utils.github import baixar_repo, extrair_codigo
 from utils.ia_utils import gerar_documentacao
 from reportlab.platypus import Image
-import subprocess
+import base64
+import httpx
 import markdown
 import json
 import os
@@ -322,31 +323,15 @@ class DocumentacaoService:
 
 
     @staticmethod
-    def gerar_imagem_mermaid(
-        codigo_mermaid: str,
-        output_path: str
-    ):
-        with open(
-            "temp_diagrama.mmd",
-            "w",
-            encoding="utf-8"
-        ) as f:
-
-            f.write(codigo_mermaid)
-
-        subprocess.run(
-            [
-                "cmd",
-                "/c",
-                "mmdc",
-                "-i",
-                "temp_diagrama.mmd",
-                "-o",
-                output_path
-            ],
-            check=True
-        )
-        os.remove("temp_diagrama.mmd")
+    def gerar_imagem_mermaid(codigo_mermaid: str, output_path: str):
+        encoded = base64.urlsafe_b64encode(codigo_mermaid.encode("utf-8")).decode("utf-8")
+        url = f"https://mermaid.ink/img/{encoded}"
+        
+        response = httpx.get(url, timeout=30)
+        response.raise_for_status()
+        
+        with open(output_path, "wb") as f:
+            f.write(response.content)
 
 
     @staticmethod
