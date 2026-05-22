@@ -9,6 +9,7 @@ from utils.email import enviar_email_reset
 from utils.token_urlsafe import gerar_token_reset
 from datetime import datetime, timedelta
 from schemas.usuario_schemas import usuarioCreate, UsuarioLogin, UsuarioUpdate
+from pathlib import Path
 import shutil
 from fastapi import Request
 import os
@@ -163,13 +164,15 @@ class UsuarioService():
     @staticmethod
     def trocar_foto_service(request: Request, foto: UploadFile, usuario: Usuario, db: Session):
         try:
-            pasta_fotos = "static/fotos_perfil"
-            if not os.path.exists(pasta_fotos):
-                os.makedirs(pasta_fotos)
+            BASE_DIR = Path(__file__).resolve().parent.parent
 
-            extensao = foto.filename.split(".")[-1]
-            nome_arquivo = f"{usuario.id}.{extensao}"
-            caminho_final = os.path.join(pasta_fotos, nome_arquivo)
+            pasta_fotos = BASE_DIR / "static" / "fotos_perfil"
+            pasta_fotos.mkdir(parents=True, exist_ok=True)
+
+            extensao = Path(foto.filename).suffix
+            nome_arquivo = f"{usuario.id}{extensao}"
+
+            caminho_final = pasta_fotos / nome_arquivo
 
             with open(caminho_final, "wb") as buffer:
                 shutil.copyfileobj(foto.file, buffer)
