@@ -1,12 +1,22 @@
 from fastapi import HTTPException, BackgroundTasks
+from fastapi.responses import FileResponse
 from urllib.parse import urlparse
 from sqlalchemy.orm import Session
 from models.usuario_model import Usuario
 from models.documentacao_model import Projeto
 from schemas.documentacao_schemas import ProjetoUpdate, ProjetoCriar
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.utils import ImageReader
+from reportlab.lib.styles import getSampleStyleSheet
+import tempfile
 from utils.processar_documentacao_util import processar_documentacao
 from utils.github import baixar_repo, extrair_codigo
 from utils.ia_utils import gerar_documentacao
+from reportlab.platypus import Image
+import subprocess
+import markdown
+import json
+import os
 
 class DocumentacaoService:
 
@@ -178,4 +188,219 @@ class DocumentacaoService:
             raise
         except Exception:
             raise HTTPException(status_code=500, detail="Erro ao tentar a gerar documentacao.")
+        
+
+    @staticmethod
+    def baixar_documentacao_service(
+        id_projeto: str,
+        usuario: Usuario,
+        db: Session
+    ):
+        projeto = (
+            db.query(Projeto)
+            .filter(
+                Projeto.id == id_projeto,
+                Projeto.usuario_id == usuario.id
+            )
+            .first()
+        )
+
+        if not projeto:
+            raise HTTPException(
+                status_code=404,
+                detail="Projeto não encontrado"
+            )
+
+        temp_pdf = tempfile.NamedTemporaryFile(
+            delete=False,
+            suffix=".pdf"
+        )
+
+        doc = SimpleDocTemplate(temp_pdf.name)
+
+        styles = getSampleStyleSheet()
+
+        elementos = []
+
+        elementos.append(
+            Paragraph("README", styles['Heading1'])
+        )
+
+        elementos.extend(
+            DocumentacaoService.markdown_para_elementos(
+                projeto.readme_projeto,
+                styles
+            )
+        )
+
+        elementos.append(Spacer(1, 20))
+
+        elementos.append(
+            Paragraph("WIKI", styles['Heading1'])
+        )
+
+        elementos.extend(
+            DocumentacaoService.markdown_para_elementos(
+                projeto.readme_projeto,
+                styles
+            )
+        )
+
+        elementos.append(Spacer(1, 20))
+
+        elementos.append(
+            Paragraph("GLOSSÁRIO", styles['Heading1'])
+        )
+
+        elementos.extend(
+            DocumentacaoService.glossario_para_elementos(
+                projeto.glossario_projeto,
+                styles
+            )
+        )
+
+        elementos.append(Spacer(1, 20))
+
+        elementos.append(
+            Paragraph("DIAGRAMAS", styles['Heading1'])
+        )
+
+        imagem_diagrama = "diagrama.png"
+
+        try:
+            codigo_mermaid = (
+                projeto.diagramas_projeto
+                .replace("```mermaid", "")
+                .replace("```", "")
+                .strip()
+            )
+
+            DocumentacaoService.gerar_imagem_mermaid(
+                codigo_mermaid,
+                imagem_diagrama
+            )
+
+            img = ImageReader(imagem_diagrama)
+            largura_original, altura_original = img.getSize()
+            largura_max = 450
+            altura_max = 500
+
+            proporcao = min(
+                largura_max / largura_original,
+                altura_max / altura_original
+            )
+
+            nova_largura = largura_original * proporcao
+            nova_altura = altura_original * proporcao
+
+            elementos.append(
+                Image(
+                    imagem_diagrama,
+                    width=nova_largura,
+                    height=nova_altura
+                )
+            )
+
+        except Exception as e:
+
+            elementos.append(
+                Paragraph(
+                    f"Erro: {str(e)}",
+                    styles['BodyText']
+                )
+            )
+
+        doc.build(elementos)
+        if os.path.exists(imagem_diagrama):
+            os.remove(imagem_diagrama)
+
+        return FileResponse(
+            temp_pdf.name,
+            media_type='application/pdf',
+            filename='documentacao.pdf'
+        )
+
+
+    @staticmethod
+    def gerar_imagem_mermaid(
+        codigo_mermaid: str,
+        output_path: str
+    ):
+        with open(
+            "temp_diagrama.mmd",
+            "w",
+            encoding="utf-8"
+        ) as f:
+
+            f.write(codigo_mermaid)
+
+        subprocess.run(
+            [
+                "cmd",
+                "/c",
+                "mmdc",
+                "-i",
+                "temp_diagrama.mmd",
+                "-o",
+                output_path
+            ],
+            check=True
+        )
+        os.remove("temp_diagrama.mmd")
+
+
+    @staticmethod
+    def markdown_para_elementos(markdown_texto, styles):
+
+        html = markdown.markdown(markdown_texto)
+
+        elementos = []
+
+        for linha in html.split("\n"):
+
+            if linha.strip():
+                elementos.append(
+                    Paragraph(
+                        linha,
+                        styles['BodyText']
+                    )
+                )
+
+                elementos.append(
+                    Spacer(1, 8)
+                )
+
+        return elementos
     
+    @staticmethod
+    def glossario_para_elementos(glossario_texto, styles):
+
+        elementos = []
+
+        try:
+            glossario = json.loads(glossario_texto)
+            for item in glossario:
+
+                termo = item.get("termo", "")
+                definicao = item.get("definicao", "")
+
+                elementos.append(
+                    Paragraph(
+                        f"<b>{termo}</b>: {definicao}",
+                        styles['BodyText']
+                    )
+                )
+
+                elementos.append(
+                    Spacer(1, 10)
+                )
+
+        except Exception:
+            elementos.append(
+                Paragraph(
+                    "Glossário inválido.",
+                    styles['BodyText']
+                )
+            )
+
+        return elementos

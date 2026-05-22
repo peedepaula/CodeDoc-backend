@@ -36,3 +36,15 @@ def atualizar_documentacao(id_projeto: uuid.UUID, background_tasks: BackgroundTa
 @router.delete("/apagar")
 def apagar_documentacao(id_projeto: uuid.UUID, db: Session = Depends(get_db), usuario: Usuario = Depends(get_current_user)):
     return DocumentacaoService.apagar_documentacao(id_projeto, usuario, db)
+
+@router.get("/download")
+def baixar_documentacao(
+    id_projeto: uuid.UUID,
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_current_user)
+):
+    return DocumentacaoService.baixar_documentacao_service(
+        id_projeto,
+        usuario,
+        db
+    )
